@@ -1,0 +1,17 @@
+name: mfm-sw58-cms
+services:
+  - name: web
+    git:
+      branch: main
+    build:
+      buildCommand: npm install
+    deployment:
+      startCommand: node backend/server.js
+      ports:
+        - port: 8000
+          protocol: http
+      env:
+        - key: PORT
+          value: "8000"
+        - key: NODE_ENV
+          value: production

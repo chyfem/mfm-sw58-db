@@ -1,0 +1,247 @@
+// controllers/transactionsController.js
+const db = require('../config/database');
+
+// ── POST /api/transactions ────────────────────────────────────
+exports.create = async (req, res) => {
+  try {
+    const { type, category, amount, description, reference, transaction_date, branch_id } = req.body;
+
+    if (!type || !category || !amount || !transaction_date) {
+      return res.status(400).json({ success: false, message: 'type, category, amount and transaction_date are required' });
+    }
+
+    const bId = req.user.role === 'super_admin' ? (branch_id || req.user.branch_id) : req.user.branch_id;
+    const date = new Date(transaction_date);
+
+    const [result] = await db.execute(
+      `INSERT INTO transactions
+         (branch_id, type, category, amount, description, reference, transaction_date, month, year, recorded_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [bId, type, category, parseFloat(amount), description || null, reference || null,
+       transaction_date, date.getMonth() + 1, date.getFullYear(), req.user.id]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Transaction recorded',
+      data: { id: result.insertId }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ── GET /api/transactions ─────────────────────────────────────
+exports.getAll = async (req, res) => {
+  try {
+    const { branch_id, type, category, month, year, page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const params = [];
+    let where = 'WHERE 1=1';
+
+    if (req.user.role !== 'super_admin') {
+      where += ' AND t.branch_id = ?'; params.push(req.user.branch_id);
+    } else if (branch_id) {
+      where += ' AND t.branch_id = ?'; params.push(branch_id);
+    }
+
+    if (type)     { where += ' AND t.type = ?';     params.push(type); }
+    if (category) { where += ' AND t.category = ?'; params.push(category); }
+    if (month)    { where += ' AND t.month = ?';    params.push(month); }
+    if (year)     { where += ' AND t.year = ?';     params.push(year); }
+
+    const [rows] = await db.execute(
+      `SELECT t.*, b.name AS branch_name, u.full_name AS recorded_by_name
+       FROM transactions t
+       LEFT JOIN branches b ON t.branch_id = b.id
+       LEFT JOIN users u ON t.recorded_by = u.id
+       ${where}
+       ORDER BY t.transaction_date DESC
+       LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), parseInt(offset)]
+    );
+
+    const [countRows] = await db.execute(
+      `SELECT COUNT(*) AS total FROM transactions t ${where}`, params
+    );
+
+    res.json({
+      success: true,
+      data: rows,
+      pagination: {
+        total: countRows[0].total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(countRows[0].total / parseInt(limit))
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ── GET /api/transactions/:id ─────────────────────────────────
+exports.getOne = async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT t.*, b.name AS branch_name FROM transactions t
+       LEFT JOIN branches b ON t.branch_id = b.id WHERE t.id = ?`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Not found' });
+    if (req.user.role !== 'super_admin' && rows[0].branch_id !== req.user.branch_id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ── DELETE /api/transactions/:id ──────────────────────────────
+exports.remove = async (req, res) => {
+  try {
+    const [existing] = await db.execute('SELECT branch_id FROM transactions WHERE id=?', [req.params.id]);
+    if (!existing.length) return res.status(404).json({ success: false, message: 'Not found' });
+    if (req.user.role !== 'super_admin' && existing[0].branch_id !== req.user.branch_id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    await db.execute('DELETE FROM transactions WHERE id=?', [req.params.id]);
+    res.json({ success: true, message: 'Transaction deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ── GET /api/reports/financial ────────────────────────────────
+exports.financialReport = async (req, res) => {
+  try {
+    const { month, year, branch_id } = req.query;
+    const currentYear  = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const y = year  || currentYear;
+    const m = month || currentMonth;
+
+    const params = [];
+    let branchFilter = '';
+
+    if (req.user.role !== 'super_admin') {
+      branchFilter = 'AND branch_id = ?'; params.push(req.user.branch_id);
+    } else if (branch_id) {
+      branchFilter = 'AND branch_id = ?'; params.push(branch_id);
+    }
+
+    // Summary for the selected period
+    const [summary] = await db.execute(
+      `SELECT
+         SUM(CASE WHEN type='income' THEN amount ELSE 0 END)  AS total_income,
+         SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS total_expense,
+         SUM(CASE WHEN type='income' AND category='tithe' THEN amount ELSE 0 END)    AS tithes,
+         SUM(CASE WHEN type='income' AND category='offering' THEN amount ELSE 0 END) AS offerings,
+         SUM(CASE WHEN type='income' AND category='donation' THEN amount ELSE 0 END) AS donations,
+         SUM(CASE WHEN type='income' AND category='special_seed' THEN amount ELSE 0 END) AS special_seeds
+       FROM transactions
+       WHERE month=? AND year=? ${branchFilter}`,
+      [m, y, ...params]
+    );
+
+    // Monthly trend for the year
+    const [monthly] = await db.execute(
+      `SELECT month,
+         SUM(CASE WHEN type='income' THEN amount ELSE 0 END)  AS income,
+         SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS expense
+       FROM transactions
+       WHERE year=? ${branchFilter}
+       GROUP BY month ORDER BY month`,
+      [y, ...params]
+    );
+
+    // Per-branch breakdown (super_admin only)
+    let byBranch = [];
+    if (req.user.role === 'super_admin' && !branch_id) {
+      const [br] = await db.execute(
+        `SELECT b.name AS branch_name,
+                SUM(CASE WHEN t.type='income' THEN t.amount ELSE 0 END)  AS income,
+                SUM(CASE WHEN t.type='expense' THEN t.amount ELSE 0 END) AS expense
+         FROM branches b
+         LEFT JOIN transactions t ON b.id = t.branch_id AND t.month=? AND t.year=?
+         GROUP BY b.id ORDER BY income DESC`,
+        [m, y]
+      );
+      byBranch = br;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        period: { month: parseInt(m), year: parseInt(y) },
+        summary: summary[0],
+        monthly_trend: monthly,
+        by_branch: byBranch
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ── GET /api/reports/dashboard ─────────────────────────────────
+exports.dashboardStats = async (req, res) => {
+  try {
+    const currentYear  = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+
+    const params = [];
+    let branchFilter = '';
+    if (req.user.role !== 'super_admin') {
+      branchFilter = 'AND t.branch_id = ?'; params.push(req.user.branch_id);
+    }
+
+    const [income] = await db.execute(
+      `SELECT COALESCE(SUM(amount),0) AS total FROM transactions t
+       WHERE type='income' AND month=? AND year=? ${branchFilter}`,
+      [currentMonth, currentYear, ...params]
+    );
+
+    const [expense] = await db.execute(
+      `SELECT COALESCE(SUM(amount),0) AS total FROM transactions t
+       WHERE type='expense' AND month=? AND year=? ${branchFilter}`,
+      [currentMonth, currentYear, ...params]
+    );
+
+    const memberFilter = req.user.role !== 'super_admin'
+      ? `AND branch_id = ${req.user.branch_id}` : '';
+
+    const [members] = await db.execute(
+      `SELECT COUNT(*) AS total, SUM(membership_status='Active') AS active FROM members WHERE 1=1 ${memberFilter}`
+    );
+
+    const [branches] = await db.execute('SELECT COUNT(*) AS total FROM branches');
+
+    const [recentTx] = await db.execute(
+      `SELECT t.*, b.name AS branch_name FROM transactions t
+       LEFT JOIN branches b ON t.branch_id = b.id
+       WHERE 1=1 ${branchFilter.replace('t.branch_id', 'branch_id').replace('AND t.', 'AND ')}
+       ORDER BY t.created_at DESC LIMIT 10`,
+      params
+    );
+
+    res.json({
+      success: true,
+      data: {
+        monthly_income:  income[0].total,
+        monthly_expense: expense[0].total,
+        net_balance:     income[0].total - expense[0].total,
+        total_members:   members[0].total,
+        active_members:  members[0].active,
+        total_branches:  branches[0].total,
+        recent_transactions: recentTx
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};

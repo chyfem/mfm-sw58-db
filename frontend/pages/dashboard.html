@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;"></div>
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="church-name">MFM SW58 Araromi</div>
+      <div class="church-sub">Church Management System</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html" class="active"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Church Website</div>
+      <a href="/pages/sermons-admin.html"><span class="nav-icon">🎙</span> Sermons</a>
+      <a href="/pages/events-admin.html"><span class="nav-icon">📅</span> Events</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="name" id="sidebar-name">Loading…</div>
+          <div class="role" id="sidebar-role"></div>
+        </div>
+      </div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Dashboard</span>
+      </div>
+      <div class="top-bar-right">
+        <span id="today-date" style="font-size:.85rem;color:var(--gray)"></span>
+        <a href="/index.html" class="btn btn-outline btn-sm" target="_blank">🌐 Website</a>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <!-- Welcome banner -->
+      <div style="background:linear-gradient(135deg,var(--dark),var(--red-dark));color:var(--white);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h2 style="font-size:1.2rem;margin-bottom:.3rem">Welcome back, <span id="welcome-name">—</span> 🙏</h2>
+          <p style="font-size:.88rem;color:rgba(255,255,255,.75)"><span id="welcome-branch"></span> · <span id="welcome-role"></span></p>
+        </div>
+        <a href="/pages/transactions.html?new=1" class="btn btn-gold btn-sm">+ Record Transaction</a>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-icon red">👥</div><div><div class="stat-value" id="stat-members">—</div><div class="stat-label">Total Members</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value" id="stat-active">—</div><div class="stat-label">Active Members</div></div></div>
+        <div class="stat-card"><div class="stat-icon gold">💰</div><div><div class="stat-value" id="stat-income">—</div><div class="stat-label">Monthly Income</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue">📉</div><div><div class="stat-value" id="stat-expense">—</div><div class="stat-label">Monthly Expense</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">📊</div><div><div class="stat-value" id="stat-balance">—</div><div class="stat-label">Net Balance</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">🏛</div><div><div class="stat-value" id="stat-branches">—</div><div class="stat-label">Total Branches</div></div></div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Income vs Expense — This Year</h3>
+            <select id="chart-year" class="form-control" style="width:auto;padding:.35rem .75rem;font-size:.85rem"></select>
+          </div>
+          <canvas id="incomeExpenseChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>Income Breakdown</h3></div>
+          <canvas id="incomeBreakdownChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="card mt-2">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Recent Transactions</span>
+          <a href="/pages/transactions.html" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead><tr><th>Date</th><th>Branch</th><th>Type</th><th>Category</th><th>Amount</th></tr></thead>
+            <tbody id="recent-tx-body">
+              <tr><td colspan="5" style="text-align:center;color:var(--gray)">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let incomeChart = null, breakdownChart = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+
+  const user = Auth.getUser();
+  document.getElementById('welcome-name').textContent   = user.full_name;
+  document.getElementById('welcome-branch').textContent = user.branch_name;
+  document.getElementById('welcome-role').textContent   = user.role.replace(/_/g,' ');
+  document.getElementById('today-date').textContent     = new Date().toLocaleDateString('en-NG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // Year selector
+  const yearSel = document.getElementById('chart-year');
+  const curYear = new Date().getFullYear();
+  for (let y = curYear; y >= curYear-3; y--) {
+    yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+  }
+  yearSel.addEventListener('change', () => loadCharts(yearSel.value));
+
+  await loadDashboard();
+  await loadCharts(curYear);
+});
+
+async function loadDashboard() {
+  const res = await api.get('/reports/dashboard');
+  if (!res?.ok) return;
+  const d = res.data.data;
+
+  document.getElementById('stat-members').textContent  = d.total_members?.toLocaleString()   || 0;
+  document.getElementById('stat-active').textContent   = d.active_members?.toLocaleString()  || 0;
+  document.getElementById('stat-income').textContent   = fmt.currency(d.monthly_income);
+  document.getElementById('stat-expense').textContent  = fmt.currency(d.monthly_expense);
+  document.getElementById('stat-balance').textContent  = fmt.currency(d.net_balance);
+  document.getElementById('stat-branches').textContent = d.total_branches || 0;
+
+  // Recent transactions table
+  const tbody = document.getElementById('recent-tx-body');
+  if (d.recent_transactions?.length) {
+    tbody.innerHTML = d.recent_transactions.map(tx => `
+      <tr>
+        <td>${fmt.date(tx.transaction_date)}</td>
+        <td>${tx.branch_name||'—'}</td>
+        <td><span class="badge ${tx.type==='income'?'badge-success':'badge-danger'}">${tx.type}</span></td>
+        <td style="text-transform:capitalize">${tx.category.replace(/_/g,' ')}</td>
+        <td style="font-weight:700;color:${tx.type==='income'?'#2d6a4f':'var(--red)'}">${fmt.currency(tx.amount)}</td>
+      </tr>`).join('');
+  } else {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No transactions yet</td></tr>';
+  }
+}
+
+async function loadCharts(year) {
+  const res = await api.get(`/reports/financial?year=${year}`);
+  if (!res?.ok) return;
+  const { monthly_trend, summary } = res.data.data;
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const incomeData  = new Array(12).fill(0);
+  const expenseData = new Array(12).fill(0);
+  monthly_trend.forEach(r => { incomeData[r.month-1] = parseFloat(r.income); expenseData[r.month-1] = parseFloat(r.expense); });
+
+  if (incomeChart) incomeChart.destroy();
+  incomeChart = new Chart(document.getElementById('incomeExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label:'Income',  data:incomeData,  backgroundColor:'rgba(45,106,79,.75)',  borderRadius:5 },
+        { label:'Expense', data:expenseData, backgroundColor:'rgba(193,18,31,.75)',  borderRadius:5 }
+      ]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'top' } }, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'₦'+v.toLocaleString() } } } }
+  });
+
+  if (breakdownChart) breakdownChart.destroy();
+  const s = summary || {};
+  breakdownChart = new Chart(document.getElementById('incomeBreakdownChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Tithes','Offerings','Donations','Special Seeds'],
+      datasets:[{ data:[s.tithes||0, s.offerings||0, s.donations||0, s.special_seeds||0],
+        backgroundColor:['#c1121f','#d4a017','#2d6a4f','#17a2b8'], borderWidth:0 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'60%' }
+  });
+}
+</script>
+</body>
+</html>

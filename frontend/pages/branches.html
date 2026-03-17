@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branches — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html" class="active"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Branch Management</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h2>All Branches (Headquarters + 8 Branches)</h2>
+        <button class="btn btn-primary" id="add-branch-btn" onclick="openAddBranch()" style="display:none">+ Add Branch</button>
+      </div>
+
+      <div id="branches-grid" class="branches-grid">
+        <div class="loading-overlay"><span class="spinner" style="color:var(--red)"></span> Loading branches…</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- BRANCH MODAL -->
+<div class="modal-overlay" id="branch-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="bmodal-title">Add Branch</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="branch-form">
+        <input type="hidden" id="b-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Branch Name *</label>
+            <input type="text" class="form-control" id="b-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Branch Code *</label>
+            <input type="text" class="form-control" id="b-code" placeholder="e.g. B09" required maxlength="10">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pastor / Leader Name</label>
+          <input type="text" class="form-control" id="b-pastor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <textarea class="form-control" id="b-address" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" id="b-phone">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="b-email">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="save-branch-btn" onclick="saveBranch()">Save Branch</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let editBranchId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  if (Auth.isSuperAdmin()) document.getElementById('add-branch-btn').style.display = 'inline-flex';
+  await loadBranches();
+});
+
+async function loadBranches() {
+  const container = document.getElementById('branches-grid');
+  const res = await api.get('/branches');
+  if (!res?.ok) { container.innerHTML = '<p style="color:var(--red)">Failed to load branches</p>'; return; }
+
+  const branches = res.data.data;
+  if (!branches.length) { container.innerHTML = '<p style="color:var(--gray)">No branches found</p>'; return; }
+
+  container.innerHTML = branches.map(b => `
+    <div class="branch-card ${b.is_headquarters?'hq':''}">
+      <div class="branch-card-header">
+        <span class="branch-code">${b.code}</span>
+        <span style="font-weight:700;font-size:.9rem">${b.name}</span>
+        ${b.is_headquarters ? '<span style="margin-left:auto;color:var(--gold);font-size:.75rem">★ HQ</span>' : ''}
+      </div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.88rem">
+          <div><strong>Pastor:</strong> ${b.pastor_name||'—'}</div>
+          <div><strong>Members:</strong> ${b.member_count||0} active</div>
+          <div><strong>Users:</strong> ${b.user_count||0} staff</div>
+          <div style="color:var(--gray)">${b.address||'—'}</div>
+          ${b.phone ? `<div>📞 ${b.phone}</div>` : ''}
+          ${b.email ? `<div>✉ ${b.email}</div>` : ''}
+        </div>
+        ${Auth.isSuperAdmin() && !b.is_headquarters ? `
+          <div style="margin-top:1rem;display:flex;gap:.5rem">
+            <button class="btn btn-outline btn-sm" onclick="editBranch(${b.id},'${b.name}','${b.address||''}','${b.phone||''}','${b.email||''}','${b.pastor_name||''}')">Edit</button>
+          </div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function openAddBranch() {
+  editBranchId = null;
+  document.getElementById('bmodal-title').textContent = 'Add New Branch';
+  document.getElementById('branch-form').reset();
+  document.getElementById('b-id').value = '';
+  document.getElementById('b-code').disabled = false;
+  openModal('branch-modal');
+}
+
+function editBranch(id, name, address, phone, email, pastor) {
+  editBranchId = id;
+  document.getElementById('bmodal-title').textContent = 'Edit Branch';
+  document.getElementById('b-id').value      = id;
+  document.getElementById('b-name').value    = name;
+  document.getElementById('b-address').value = address;
+  document.getElementById('b-phone').value   = phone;
+  document.getElementById('b-email').value   = email;
+  document.getElementById('b-pastor').value  = pastor;
+  document.getElementById('b-code').disabled = true;
+  openModal('branch-modal');
+}
+
+async function saveBranch() {
+  const btn = document.getElementById('save-branch-btn');
+  setLoading(btn, true);
+  const payload = {
+    name:        document.getElementById('b-name').value,
+    code:        document.getElementById('b-code').value,
+    address:     document.getElementById('b-address').value,
+    phone:       document.getElementById('b-phone').value,
+    email:       document.getElementById('b-email').value,
+    pastor_name: document.getElementById('b-pastor').value,
+  };
+  let res;
+  if (editBranchId) res = await api.put(`/branches/${editBranchId}`, payload);
+  else              res = await api.post('/branches', payload);
+  setLoading(btn, false);
+  if (res?.ok) {
+    toast(editBranchId ? 'Branch updated!' : 'Branch added!', 'success');
+    closeModal('branch-modal');
+    loadBranches();
+  } else {
+    toast(res?.data?.message || 'Failed to save branch', 'error');
+  }
+}
+</script>
+</body>
+</html>

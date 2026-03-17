@@ -1,0 +1,24 @@
+# Dependencies — never commit these
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Environment files — never commit secrets
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+.cache/

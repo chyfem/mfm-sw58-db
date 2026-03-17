@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Branches — MFM SW58 Araromi Akure</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="/index.html" class="navbar-brand">
+      <div class="logo">MFM</div>
+      <div class="navbar-brand-text">
+        <div class="church-name">MFM SW58 Araromi Akure</div>
+        <div class="church-sub">Mountain of Fire & Miracles Ministries</div>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/pages/about.html">About</a></li>
+      <li><a href="/pages/sermons.html">Sermons</a></li>
+      <li><a href="/pages/events.html">Events</a></li>
+      <li><a href="/pages/branches.html" class="active">Branches</a></li>
+      <li><a href="/pages/giving.html">Give</a></li>
+      <li><a href="/pages/contact.html">Contact</a></li>
+      <li><a href="/pages/login.html" class="btn btn-gold btn-sm">Staff Portal</a></li>
+    </ul>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+  <div class="mobile-menu">
+    <a href="/index.html">Home</a><a href="/pages/about.html">About</a>
+    <a href="/pages/sermons.html">Sermons</a><a href="/pages/events.html">Events</a>
+    <a href="/pages/branches.html">Branches</a><a href="/pages/giving.html">Give</a>
+    <a href="/pages/contact.html">Contact</a><a href="/pages/login.html">Staff Portal</a>
+  </div>
+</nav>
+
+<!-- Page Header -->
+<div style="background:linear-gradient(135deg,var(--dark),var(--red-dark));color:var(--white);padding:8rem 1.5rem 4rem;text-align:center;margin-top:70px">
+  <h1 style="font-size:clamp(1.8rem,5vw,3rem);margin-bottom:1rem">Our Branches</h1>
+  <p style="color:rgba(255,255,255,.75);max-width:560px;margin:0 auto">MFM SW58 Araromi region comprises the Headquarters and 8 branch churches spread across Akure, Ondo State.</p>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="center mb-2">
+      <h2 class="section-title">Headquarters & Branches</h2>
+      <p class="section-subtitle">Find a church near you — all branches welcome everyone</p>
+    </div>
+    <div class="branches-grid" id="public-branches-grid">
+      <div class="loading-overlay" style="grid-column:1/-1"><span class="spinner" style="color:var(--red)"></span> Loading branches…</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom" style="border-top:none;padding:1.5rem 0">
+      <span>© 2024 MFM SW58 Araromi Akure. All rights reserved.</span>
+      <a href="/index.html" style="color:var(--gold)">← Back to Home</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const grid = document.getElementById('public-branches-grid');
+  const res  = await api.get('/public/branches');
+  if (!res?.ok || !res.data.data.length) {
+    grid.innerHTML = '<p style="text-align:center;color:var(--gray)">Branch information coming soon.</p>';
+    return;
+  }
+  grid.innerHTML = res.data.data.map(b => `
+    <div class="branch-card ${b.is_headquarters?'hq':''}">
+      <div class="branch-card-header">
+        <span class="branch-code">${b.code}</span>
+        <span style="font-weight:700;font-size:.9rem">${b.name}</span>
+        ${b.is_headquarters?'<span style="margin-left:auto;color:var(--gold);font-size:.75rem;font-weight:700">★ HEADQUARTERS</span>':''}
+      </div>
+      <div class="card-body" style="font-size:.9rem">
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          ${b.pastor_name?`<div>👨‍💼 <strong>Pastor:</strong> ${b.pastor_name}</div>`:''}
+          ${b.address?`<div>📍 ${b.address}</div>`:''}
+          ${b.phone?`<div>📞 <a href="tel:${b.phone}" style="color:var(--red)">${b.phone}</a></div>`:''}
+          ${b.email?`<div>✉ <a href="mailto:${b.email}" style="color:var(--red)">${b.email}</a></div>`:''}
+        </div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--gray-light);font-size:.82rem;color:var(--gray)">
+          🕐 Sunday Service: 7:00 AM – 10:30 AM
+        </div>
+      </div>
+    </div>`).join('');
+});
+</script>
+</body>
+</html>

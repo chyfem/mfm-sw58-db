@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html" class="active"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Settings & Profile</span>
+      </div>
+    </div>
+
+    <div class="page-content" style="max-width:700px">
+      <!-- Profile Card -->
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">👤 My Profile</div>
+        <div class="card-body">
+          <div id="profile-info">
+            <div class="loading-overlay"><span class="spinner" style="color:var(--red)"></span> Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">🔒 Change Password</div>
+        <div class="card-body">
+          <div id="pw-alert"></div>
+          <form id="pw-form">
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-control" id="cur-pw" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-control" id="new-pw" required minlength="6" placeholder="Min 6 characters">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-control" id="conf-pw" required placeholder="Repeat new password">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="changePassword()" id="pw-btn">Update Password</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- System Info -->
+      <div class="card">
+        <div class="card-header">ℹ System Information</div>
+        <div class="card-body">
+          <table class="table">
+            <tr><td><strong>System Name</strong></td><td>MFM SW58 Araromi Akure CMS</td></tr>
+            <tr><td><strong>Version</strong></td><td>1.0.0</td></tr>
+            <tr><td><strong>Church</strong></td><td>Mountain of Fire and Miracles Ministries</td></tr>
+            <tr><td><strong>Region</strong></td><td>SW58 Araromi, Akure, Ondo State</td></tr>
+            <tr><td><strong>Database</strong></td><td>MySQL 8.x</td></tr>
+            <tr><td><strong>Backend</strong></td><td>Node.js / Express.js</td></tr>
+          </table>
+          <div class="alert alert-info mt-1" style="font-size:.85rem">
+            <strong>⚠ Security Reminder:</strong> Change default passwords immediately after setup. Always use strong, unique passwords for all user accounts.
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  const res = await api.get('/auth/profile');
+  if (res?.ok) {
+    const u = res.data.user;
+    document.getElementById('profile-info').innerHTML = `
+      <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+        <div style="width:70px;height:70px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white);font-family:var(--font-head);font-size:1.5rem;font-weight:700;flex-shrink:0">${fmt.initials(u.full_name)}</div>
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:.3rem">${u.full_name}</h3>
+          <p style="color:var(--gray);font-size:.9rem">@${u.username} · ${u.email}</p>
+          <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+            <span class="badge badge-danger">${u.role.replace(/_/g,' ')}</span>
+            <span class="badge badge-info">${u.branch_name}</span>
+            ${u.is_headquarters ? '<span class="badge badge-warning">★ Headquarters</span>' : ''}
+          </div>
+          <p style="font-size:.82rem;color:var(--gray);margin-top:.5rem">Last login: ${fmt.datetime(u.last_login)||'—'}</p>
+        </div>
+      </div>`;
+  }
+});
+
+async function changePassword() {
+  const curPw  = document.getElementById('cur-pw').value;
+  const newPw  = document.getElementById('new-pw').value;
+  const confPw = document.getElementById('conf-pw').value;
+  const alertEl = document.getElementById('pw-alert');
+
+  alertEl.innerHTML = '';
+  if (newPw !== confPw) { alertEl.innerHTML = '<div class="alert alert-error">New passwords do not match</div>'; return; }
+  if (newPw.length < 6) { alertEl.innerHTML = '<div class="alert alert-error">Password must be at least 6 characters</div>'; return; }
+
+  const btn = document.getElementById('pw-btn');
+  setLoading(btn, true);
+  const res = await api.post('/auth/change-password', { current_password: curPw, new_password: newPw });
+  setLoading(btn, false);
+
+  if (res?.ok) {
+    alertEl.innerHTML = '<div class="alert alert-success">Password changed successfully!</div>';
+    document.getElementById('pw-form').reset();
+  } else {
+    alertEl.innerHTML = `<div class="alert alert-error">${res?.data?.message||'Failed to change password'}</div>`;
+  }
+}
+</script>
+</body>
+</html>

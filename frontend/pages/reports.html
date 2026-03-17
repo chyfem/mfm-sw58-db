@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financial Reports — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html" class="active"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Financial Reports</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print Report</button>
+    </div>
+
+    <div class="page-content">
+      <!-- Filter Controls -->
+      <div class="card" style="padding:1.2rem;margin-bottom:1.5rem">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="margin:0;min-width:140px">
+            <label class="form-label">Month</label>
+            <select class="form-control" id="r-month">
+              <option value="">All Months</option>
+              <option value="1">January</option><option value="2">February</option>
+              <option value="3">March</option><option value="4">April</option>
+              <option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option>
+              <option value="9">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;min-width:120px">
+            <label class="form-label">Year</label>
+            <select class="form-control" id="r-year"></select>
+          </div>
+          <div class="form-group" style="margin:0;min-width:200px" id="branch-filter-wrap">
+            <label class="form-label">Branch</label>
+            <select class="form-control" id="r-branch"><option value="">All Branches (Regional)</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="loadReport()">📊 Generate Report</button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="report-summary" id="report-summary">
+        <div class="report-stat"><div class="amount" id="r-income">₦0</div><div class="label">Total Income</div></div>
+        <div class="report-stat"><div class="amount" id="r-expense">₦0</div><div class="label">Total Expense</div></div>
+        <div class="report-stat"><div class="amount" id="r-net">₦0</div><div class="label">Net Balance</div></div>
+        <div class="report-stat"><div class="amount" id="r-tithe">₦0</div><div class="label">Tithes</div></div>
+        <div class="report-stat"><div class="amount" id="r-offering">₦0</div><div class="label">Offerings</div></div>
+        <div class="report-stat"><div class="amount" id="r-donation">₦0</div><div class="label">Donations</div></div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-grid" style="margin-bottom:1.5rem">
+        <div class="chart-card">
+          <div class="chart-header"><h3>Monthly Income vs Expense Trend</h3></div>
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>Income Breakdown</h3></div>
+          <canvas id="donutChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Branch Performance Table (Super Admin only) -->
+      <div id="branch-perf-wrap" style="display:none">
+        <div class="card">
+          <div class="card-header">Branch Performance Comparison</div>
+          <div class="table-wrapper">
+            <table class="table">
+              <thead><tr><th>#</th><th>Branch</th><th>Total Income</th><th>Total Expense</th><th>Net</th><th>Performance</th></tr></thead>
+              <tbody id="branch-perf-body">
+                <tr><td colspan="6" style="text-align:center;color:var(--gray)">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let trendChart = null, donutChart = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+
+  const cy = new Date().getFullYear();
+  const yrEl = document.getElementById('r-year');
+  for (let y = cy; y >= cy-4; y--) yrEl.innerHTML += `<option value="${y}" ${y===cy?'selected':''}>${y}</option>`;
+
+  document.getElementById('r-month').value = new Date().getMonth() + 1;
+
+  // Load branches
+  if (Auth.isSuperAdmin()) {
+    document.getElementById('branch-perf-wrap').style.display = 'block';
+    const res = await api.get('/branches');
+    if (res?.ok) {
+      res.data.data.forEach(b => {
+        document.getElementById('r-branch').innerHTML += `<option value="${b.id}">${b.name}</option>`;
+      });
+    }
+  } else {
+    document.getElementById('branch-filter-wrap').style.display = 'none';
+  }
+
+  loadReport();
+});
+
+async function loadReport() {
+  const month  = document.getElementById('r-month').value;
+  const year   = document.getElementById('r-year').value;
+  const branch = document.getElementById('r-branch')?.value;
+
+  let url = `/reports/financial?year=${year}`;
+  if (month)  url += `&month=${month}`;
+  if (branch) url += `&branch_id=${branch}`;
+
+  const res = await api.get(url);
+  if (!res?.ok) { toast('Failed to load report', 'error'); return; }
+
+  const { summary, monthly_trend, by_branch } = res.data.data;
+  const s = summary || {};
+
+  document.getElementById('r-income').textContent   = fmt.currency(s.total_income);
+  document.getElementById('r-expense').textContent  = fmt.currency(s.total_expense);
+  const net = (parseFloat(s.total_income)||0) - (parseFloat(s.total_expense)||0);
+  const netEl = document.getElementById('r-net');
+  netEl.textContent  = fmt.currency(net);
+  netEl.style.color  = net >= 0 ? '#2d6a4f' : 'var(--red)';
+  document.getElementById('r-tithe').textContent    = fmt.currency(s.tithes);
+  document.getElementById('r-offering').textContent = fmt.currency(s.offerings);
+  document.getElementById('r-donation').textContent = fmt.currency(s.donations);
+
+  // Trend chart
+  const labels  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const incData  = new Array(12).fill(0);
+  const expData  = new Array(12).fill(0);
+  (monthly_trend||[]).forEach(r => { incData[r.month-1] = parseFloat(r.income); expData[r.month-1] = parseFloat(r.expense); });
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Income',  data:incData,  borderColor:'#2d6a4f', backgroundColor:'rgba(45,106,79,.1)', fill:true, tension:.4 },
+        { label:'Expense', data:expData,  borderColor:'#c1121f', backgroundColor:'rgba(193,18,31,.1)', fill:true, tension:.4 }
+      ]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'top' } }, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'₦'+v.toLocaleString() } } } }
+  });
+
+  // Donut chart
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Tithes','Offerings','Donations','Special Seeds'],
+      datasets:[{ data:[s.tithes||0, s.offerings||0, s.donations||0, s.special_seeds||0],
+        backgroundColor:['#c1121f','#d4a017','#2d6a4f','#17a2b8'], borderWidth:2 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'55%' }
+  });
+
+  // Branch performance
+  if (by_branch?.length) {
+    const maxIncome = Math.max(...by_branch.map(b => parseFloat(b.income)||0), 1);
+    const tbody = document.getElementById('branch-perf-body');
+    if (tbody) {
+      tbody.innerHTML = by_branch.map((b,i) => {
+        const inc = parseFloat(b.income)||0;
+        const exp = parseFloat(b.expense)||0;
+        const pct = Math.round((inc/maxIncome)*100);
+        return `
+        <tr>
+          <td>${i+1}</td>
+          <td><strong>${b.branch_name}</strong></td>
+          <td style="color:#2d6a4f;font-weight:700">${fmt.currency(inc)}</td>
+          <td style="color:var(--red)">${fmt.currency(exp)}</td>
+          <td style="font-weight:700;color:${inc-exp>=0?'#2d6a4f':'var(--red)'}">${fmt.currency(inc-exp)}</td>
+          <td style="width:150px">
+            <div style="background:var(--gray-light);border-radius:50px;height:8px">
+              <div style="background:${pct>50?'#2d6a4f':'var(--gold)'};width:${pct}%;height:100%;border-radius:50px;transition:.5s"></div>
+            </div>
+            <small style="font-size:.72rem;color:var(--gray)">${pct}% of top</small>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}
+</script>
+</body>
+</html>

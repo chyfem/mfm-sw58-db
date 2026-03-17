@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — MFM SW58 Araromi Akure</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="/index.html" class="navbar-brand">
+      <div class="logo">MFM</div>
+      <div class="navbar-brand-text">
+        <div class="church-name">MFM SW58 Araromi Akure</div>
+        <div class="church-sub">Mountain of Fire & Miracles Ministries</div>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/index.html">Home</a></li>
+      <li><a href="/pages/about.html">About</a></li>
+      <li><a href="/pages/sermons.html">Sermons</a></li>
+      <li><a href="/pages/events.html">Events</a></li>
+      <li><a href="/pages/branches.html">Branches</a></li>
+      <li><a href="/pages/giving.html">Give</a></li>
+      <li><a href="/pages/contact.html" class="active">Contact</a></li>
+      <li><a href="/pages/login.html" class="btn btn-gold btn-sm">Staff Portal</a></li>
+    </ul>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+  <div class="mobile-menu">
+    <a href="/index.html">Home</a><a href="/pages/contact.html">Contact</a>
+    <a href="/pages/giving.html">Give</a><a href="/pages/login.html">Staff Portal</a>
+  </div>
+</nav>
+
+<div style="background:linear-gradient(135deg,var(--dark),var(--red-dark));color:var(--white);padding:8rem 1.5rem 4rem;text-align:center;margin-top:70px">
+  <h1 style="font-size:clamp(1.8rem,5vw,3rem);margin-bottom:1rem">Contact Us</h1>
+  <p style="color:rgba(255,255,255,.75);max-width:560px;margin:0 auto">We'd love to hear from you. Reach out and let's connect.</p>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="contact-grid">
+      <!-- Contact info -->
+      <div>
+        <h2 style="font-family:var(--font-head);margin-bottom:1.5rem">Get in Touch</h2>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">📍</div>
+          <div>
+            <strong>Address</strong>
+            <p style="color:var(--gray);font-size:.9rem">Araromi, Akure, Ondo State, Nigeria</p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">📞</div>
+          <div>
+            <strong>Phone</strong>
+            <p style="color:var(--gray);font-size:.9rem"><a href="tel:08012345678" style="color:var(--red)">08012345678</a></p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">✉</div>
+          <div>
+            <strong>Email</strong>
+            <p style="color:var(--gray);font-size:.9rem"><a href="mailto:info@mfmsw58.org" style="color:var(--red)">info@mfmsw58.org</a></p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">⏰</div>
+          <div>
+            <strong>Office Hours</strong>
+            <p style="color:var(--gray);font-size:.9rem">Monday – Friday: 9:00 AM – 4:00 PM<br>Saturday: 9:00 AM – 1:00 PM</p>
+          </div>
+        </div>
+        <div class="service-times" style="margin-top:1.5rem">
+          <h3>⛪ Service Times</h3>
+          <div class="service-time-item"><span>Sunday Service</span><span style="color:var(--gold)">7:00 AM</span></div>
+          <div class="service-time-item"><span>Midweek (Bible Study)</span><span style="color:var(--gold)">Wed 5:30 PM</span></div>
+          <div class="service-time-item"><span>PMC (Prayer Meeting)</span><span style="color:var(--gold)">Fri 6:00 PM</span></div>
+          <div class="service-time-item"><span>Mountain Top Life</span><span style="color:var(--gold)">Sat 5:00 AM</span></div>
+        </div>
+      </div>
+
+      <!-- Contact form -->
+      <div class="card">
+        <div class="card-header">📬 Send us a Message</div>
+        <div class="card-body">
+          <div id="contact-alert"></div>
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" class="form-control" id="c-name" placeholder="Full name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="c-email" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" id="c-phone" placeholder="080xxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <select class="form-control" id="c-subject">
+              <option>General Inquiry</option>
+              <option>Prayer Request</option>
+              <option>Membership</option>
+              <option>Partnership & Giving</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-control" id="c-message" rows="4" placeholder="How can we help you?"></textarea>
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="submitContact()" id="contact-btn">
+            Send Message ✉
+          </button>
+          <p style="font-size:.78rem;color:var(--gray);text-align:center;margin-top:.75rem">We typically respond within 24-48 hours</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom" style="border-top:none;padding:1.5rem 0">
+      <span>© 2024 MFM SW58 Araromi Akure. All rights reserved.</span>
+      <a href="/index.html" style="color:var(--gold)">← Back to Home</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/api.js"></script>
+<script>
+function submitContact() {
+  const name    = document.getElementById('c-name').value.trim();
+  const email   = document.getElementById('c-email').value.trim();
+  const message = document.getElementById('c-message').value.trim();
+  const alertEl = document.getElementById('contact-alert');
+
+  if (!name || !email || !message) {
+    alertEl.innerHTML = '<div class="alert alert-error">Please fill in your name, email and message</div>';
+    return;
+  }
+
+  const btn = document.getElementById('contact-btn');
+  setLoading(btn, true);
+
+  // Simulate submission (integrate with email service in production)
+  setTimeout(() => {
+    setLoading(btn, false);
+    alertEl.innerHTML = `
+      <div class="alert alert-success">
+        <strong>✓ Message sent!</strong><br>
+        Thank you, ${name}. We'll get back to you at ${email} within 24-48 hours.
+      </div>`;
+    document.getElementById('c-name').value    = '';
+    document.getElementById('c-email').value   = '';
+    document.getElementById('c-phone').value   = '';
+    document.getElementById('c-message').value = '';
+  }, 1000);
+}
+</script>
+</body>
+</html>

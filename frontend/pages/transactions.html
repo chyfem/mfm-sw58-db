@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html" class="active"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Financial Transactions</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <!-- Quick summary -->
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:1.5rem">
+        <div class="stat-card"><div class="stat-icon green">💰</div><div><div class="stat-value" id="s-income">₦0</div><div class="stat-label">This Month Income</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">📉</div><div><div class="stat-value" id="s-expense">₦0</div><div class="stat-label">This Month Expense</div></div></div>
+        <div class="stat-card"><div class="stat-icon gold">🧾</div><div><div class="stat-value" id="s-tithe">₦0</div><div class="stat-label">Tithes</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue">🙏</div><div><div class="stat-value" id="s-offering">₦0</div><div class="stat-label">Offerings</div></div></div>
+      </div>
+
+      <div class="page-header">
+        <h2>Transactions</h2>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Record Transaction</button>
+      </div>
+
+      <div class="filters-bar">
+        <select class="form-control" id="filter-type" style="width:auto">
+          <option value="">All Types</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+        <select class="form-control" id="filter-cat" style="width:auto">
+          <option value="">All Categories</option>
+          <optgroup label="Income">
+            <option value="tithe">Tithe</option>
+            <option value="offering">Offering</option>
+            <option value="donation">Donation</option>
+            <option value="special_seed">Special Seed</option>
+            <option value="thanksgiving">Thanksgiving</option>
+          </optgroup>
+          <optgroup label="Expense">
+            <option value="utility">Utility</option>
+            <option value="salary">Salary</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="welfare">Welfare</option>
+            <option value="event">Event</option>
+            <option value="other">Other</option>
+          </optgroup>
+        </select>
+        <select class="form-control" id="filter-month" style="width:auto">
+          <option value="">All Months</option>
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+        <select class="form-control" id="filter-year" style="width:auto"></select>
+        <select class="form-control" id="filter-branch" style="width:auto">
+          <option value="">All Branches</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="applyFilters()">🔍 Filter</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr><th>Date</th><th>Branch</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th>Recorded By</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="tx-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--gray)">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="tx-pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ADD TRANSACTION MODAL -->
+<div class="modal-overlay" id="tx-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Record Transaction</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="tx-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Type *</label>
+            <select class="form-control" id="t-type" required onchange="updateCategories()">
+              <option value="">Select type…</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select class="form-control" id="t-cat" required>
+              <option value="">Select type first…</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Amount (₦) *</label>
+            <input type="number" class="form-control" id="t-amount" min="0" step="0.01" required placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date *</label>
+            <input type="date" class="form-control" id="t-date" required>
+          </div>
+        </div>
+        <div class="form-group" id="tx-branch-row">
+          <label class="form-label">Branch</label>
+          <select class="form-control" id="t-branch"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="t-desc" rows="2" placeholder="Optional details…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference / Receipt No.</label>
+          <input type="text" class="form-control" id="t-ref" placeholder="Optional">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="save-tx-btn" onclick="saveTx()">Save Transaction</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let txPage = 1;
+const incomeCategories  = ['tithe','offering','donation','special_seed','thanksgiving'];
+const expenseCategories = ['utility','salary','maintenance','welfare','event','other'];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+
+  // Set default date to today
+  document.getElementById('t-date').valueAsDate = new Date();
+
+  // Year filter
+  const yr = document.getElementById('filter-year');
+  const cy = new Date().getFullYear();
+  yr.innerHTML = '<option value="">All Years</option>';
+  for (let y = cy; y >= cy-3; y--) yr.innerHTML += `<option value="${y}">${y}</option>`;
+  yr.value = cy;
+
+  // Default month filter to current month
+  document.getElementById('filter-month').value = new Date().getMonth() + 1;
+
+  await loadBranches();
+  await loadSummary();
+  await loadTx();
+
+  ['filter-type','filter-cat','filter-month','filter-year','filter-branch'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => { txPage=1; loadTx(); });
+  });
+});
+
+async function loadBranches() {
+  const res = await api.get('/branches');
+  if (!res?.ok) return;
+  const user = Auth.getUser();
+  res.data.data.forEach(b => {
+    document.getElementById('filter-branch').innerHTML += `<option value="${b.id}">${b.name}</option>`;
+    document.getElementById('t-branch').innerHTML += `<option value="${b.id}" ${b.id===user.branch_id?'selected':''}>${b.name}</option>`;
+  });
+  if (!Auth.isSuperAdmin()) document.getElementById('tx-branch-row').style.display = 'none';
+}
+
+async function loadSummary() {
+  const m = new Date().getMonth() + 1;
+  const y = new Date().getFullYear();
+  const res = await api.get(`/reports/financial?month=${m}&year=${y}`);
+  if (!res?.ok) return;
+  const s = res.data.data.summary;
+  document.getElementById('s-income').textContent  = fmt.currency(s.total_income);
+  document.getElementById('s-expense').textContent = fmt.currency(s.total_expense);
+  document.getElementById('s-tithe').textContent   = fmt.currency(s.tithes);
+  document.getElementById('s-offering').textContent= fmt.currency(s.offerings);
+}
+
+async function loadTx() {
+  const type   = document.getElementById('filter-type').value;
+  const cat    = document.getElementById('filter-cat').value;
+  const month  = document.getElementById('filter-month').value;
+  const year   = document.getElementById('filter-year').value;
+  const branch = document.getElementById('filter-branch').value;
+
+  let url = `/transactions?page=${txPage}&limit=30`;
+  if (type)   url += `&type=${type}`;
+  if (cat)    url += `&category=${cat}`;
+  if (month)  url += `&month=${month}`;
+  if (year)   url += `&year=${year}`;
+  if (branch) url += `&branch_id=${branch}`;
+
+  const tbody = document.getElementById('tx-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray)">Loading…</td></tr>';
+
+  const res = await api.get(url);
+  if (!res?.ok) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--red)">Failed to load</td></tr>'; return; }
+
+  const { data, pagination } = res.data;
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray)">No transactions found for selected filters</td></tr>'; return; }
+
+  tbody.innerHTML = data.map(t => `
+    <tr>
+      <td>${fmt.date(t.transaction_date)}</td>
+      <td style="font-size:.85rem">${t.branch_name||'—'}</td>
+      <td><span class="badge ${t.type==='income'?'badge-success':'badge-danger'}">${t.type}</span></td>
+      <td style="text-transform:capitalize">${t.category.replace(/_/g,' ')}</td>
+      <td style="font-size:.85rem;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.description||'—'}</td>
+      <td style="font-weight:700;color:${t.type==='income'?'#2d6a4f':'var(--red)'}">${fmt.currency(t.amount)}</td>
+      <td style="font-size:.82rem">${t.recorded_by_name||'—'}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteTx(${t.id})">Del</button></td>
+    </tr>`).join('');
+
+  // Pagination
+  const pagEl = document.getElementById('tx-pagination');
+  pagEl.innerHTML = '';
+  if (pagination.pages > 1) {
+    for (let i=1; i<=Math.min(pagination.pages,10); i++) {
+      pagEl.innerHTML += `<button class="${i===txPage?'active':''}" onclick="txPage=${i};loadTx()">${i}</button>`;
+    }
+  }
+}
+
+function applyFilters() { txPage=1; loadTx(); }
+
+function updateCategories() {
+  const type = document.getElementById('t-type').value;
+  const catEl = document.getElementById('t-cat');
+  const cats  = type === 'income' ? incomeCategories : type === 'expense' ? expenseCategories : [];
+  catEl.innerHTML = cats.length
+    ? cats.map(c => `<option value="${c}">${c.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</option>`).join('')
+    : '<option value="">Select type first…</option>';
+}
+
+function openAddModal() {
+  document.getElementById('tx-form').reset();
+  document.getElementById('t-date').valueAsDate = new Date();
+  document.getElementById('t-cat').innerHTML = '<option value="">Select type first…</option>';
+  openModal('tx-modal');
+}
+
+async function saveTx() {
+  const btn = document.getElementById('save-tx-btn');
+  setLoading(btn, true);
+  const payload = {
+    type:             document.getElementById('t-type').value,
+    category:         document.getElementById('t-cat').value,
+    amount:           document.getElementById('t-amount').value,
+    transaction_date: document.getElementById('t-date').value,
+    branch_id:        document.getElementById('t-branch').value,
+    description:      document.getElementById('t-desc').value,
+    reference:        document.getElementById('t-ref').value,
+  };
+  if (!payload.type || !payload.category || !payload.amount || !payload.transaction_date) {
+    toast('Please fill in all required fields', 'warning');
+    setLoading(btn, false); return;
+  }
+  const res = await api.post('/transactions', payload);
+  setLoading(btn, false);
+  if (res?.ok) {
+    toast('Transaction recorded successfully!', 'success');
+    closeModal('tx-modal');
+    loadTx();
+    loadSummary();
+  } else {
+    toast(res?.data?.message || 'Failed to save transaction', 'error');
+  }
+}
+
+async function deleteTx(id) {
+  confirmDialog('Delete this transaction? This cannot be undone.', async () => {
+    const res = await api.delete(`/transactions/${id}`);
+    if (res?.ok) { toast('Transaction deleted', 'success'); loadTx(); loadSummary(); }
+    else toast('Failed to delete', 'error');
+  });
+}
+</script>
+</body>
+</html>

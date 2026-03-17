@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Members — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html" class="active"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Membership Management</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <!-- Stats row -->
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:1.5rem" id="member-stats">
+        <div class="stat-card"><div class="stat-icon red">👥</div><div><div class="stat-value" id="s-total">—</div><div class="stat-label">Total</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value" id="s-active">—</div><div class="stat-label">Active</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue">👨</div><div><div class="stat-value" id="s-male">—</div><div class="stat-label">Male</div></div></div>
+        <div class="stat-card"><div class="stat-icon gold">👩</div><div><div class="stat-value" id="s-female">—</div><div class="stat-label">Female</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">💧</div><div><div class="stat-value" id="s-baptized">—</div><div class="stat-label">Baptized</div></div></div>
+      </div>
+
+      <!-- Filters & Actions -->
+      <div class="page-header">
+        <h2>Members List</h2>
+        <button class="btn btn-primary" onclick="openModal('member-modal')">+ Add Member</button>
+      </div>
+
+      <div class="filters-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" id="search-input" placeholder="Search name, ID, phone…" style="padding-left:2.4rem;width:250px">
+        </div>
+        <select class="form-control" id="filter-status" style="width:auto">
+          <option value="">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="Transferred">Transferred</option>
+        </select>
+        <select class="form-control" id="filter-branch" style="width:auto" id="filter-branch">
+          <option value="">All Branches</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Member ID</th><th>Full Name</th><th>Gender</th><th>Phone</th>
+                <th>Branch</th><th>Dept</th><th>Status</th><th>Date Joined</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="members-tbody">
+              <tr><td colspan="9" class="loading-overlay">Loading members…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ADD/EDIT MEMBER MODAL -->
+<div class="modal-overlay" id="member-modal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header">
+      <h3 id="modal-title">Register New Member</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="member-form">
+        <input type="hidden" id="member-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" class="form-control" id="f-fullname" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender *</label>
+            <select class="form-control" id="f-gender" required>
+              <option value="">Select…</option>
+              <option>Male</option><option>Female</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" id="f-phone" placeholder="080xxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="f-email">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" class="form-control" id="f-dob">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date Joined *</label>
+            <input type="date" class="form-control" id="f-joined" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Marital Status</label>
+            <select class="form-control" id="f-marital">
+              <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Occupation</label>
+            <input type="text" class="form-control" id="f-occupation">
+          </div>
+        </div>
+        <div class="form-row" id="branch-row">
+          <div class="form-group">
+            <label class="form-label">Branch</label>
+            <select class="form-control" id="f-branch"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <select class="form-control" id="f-dept"><option value="">None</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <textarea class="form-control" id="f-address" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Next of Kin</label>
+            <input type="text" class="form-control" id="f-nok">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Next of Kin Phone</label>
+            <input type="tel" class="form-control" id="f-nokphone">
+          </div>
+        </div>
+        <div style="display:flex;gap:1.5rem">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer"><input type="checkbox" id="f-baptized"> Baptized</label>
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer"><input type="checkbox" id="f-worker"> Worker</label>
+        </div>
+        <div class="form-group mt-1" id="status-row" style="display:none">
+          <label class="form-label">Membership Status</label>
+          <select class="form-control" id="f-status">
+            <option>Active</option><option>Inactive</option><option>Transferred</option><option>Deceased</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="save-member-btn" onclick="saveMember()">Save Member</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let page = 1, editId = null, branches = [], departments = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  await loadBranches();
+  await loadDepartments();
+  await loadStats();
+  await loadMembers();
+
+  let debounce;
+  document.getElementById('search-input').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => { page=1; loadMembers(); }, 400); });
+  document.getElementById('filter-status').addEventListener('change', () => { page=1; loadMembers(); });
+  document.getElementById('filter-branch').addEventListener('change', () => { page=1; loadMembers(); });
+});
+
+async function loadBranches() {
+  const res = await api.get('/branches');
+  if (!res?.ok) return;
+  branches = res.data.data;
+  const sel = document.getElementById('filter-branch');
+  const fsel = document.getElementById('f-branch');
+  const user = Auth.getUser();
+
+  branches.forEach(b => {
+    sel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+    fsel.innerHTML += `<option value="${b.id}" ${b.id===user.branch_id?'selected':''}>${b.name}</option>`;
+  });
+  // hide branch selector for non-super-admins
+  if (!Auth.isSuperAdmin()) document.getElementById('branch-row').style.display = 'none';
+}
+
+async function loadDepartments() {
+  const res = await api.get('/departments');
+  if (!res?.ok) return;
+  departments = res.data.data;
+  const sel = document.getElementById('f-dept');
+  departments.forEach(d => { sel.innerHTML += `<option value="${d.id}">${d.name}</option>`; });
+}
+
+async function loadStats() {
+  const res = await api.get('/members/stats');
+  if (!res?.ok) return;
+  const s = res.data.data.summary;
+  document.getElementById('s-total').textContent    = s.total || 0;
+  document.getElementById('s-active').textContent   = s.active || 0;
+  document.getElementById('s-male').textContent     = s.male || 0;
+  document.getElementById('s-female').textContent   = s.female || 0;
+  document.getElementById('s-baptized').textContent = s.baptized || 0;
+}
+
+async function loadMembers() {
+  const search   = document.getElementById('search-input').value;
+  const status   = document.getElementById('filter-status').value;
+  const branchId = document.getElementById('filter-branch').value;
+  let url = `/members?page=${page}&limit=25`;
+  if (search)   url += `&search=${encodeURIComponent(search)}`;
+  if (status)   url += `&status=${status}`;
+  if (branchId) url += `&branch_id=${branchId}`;
+
+  const tbody = document.getElementById('members-tbody');
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray)">Loading…</td></tr>';
+
+  const res = await api.get(url);
+  if (!res?.ok) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--red)">Failed to load members</td></tr>'; return; }
+
+  const { data, pagination } = res.data;
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray)">No members found</td></tr>'; return; }
+
+  tbody.innerHTML = data.map(m => `
+    <tr>
+      <td><strong>${m.member_id}</strong></td>
+      <td>${m.full_name}</td>
+      <td>${m.gender}</td>
+      <td>${m.phone||'—'}</td>
+      <td>${m.branch_name||'—'}</td>
+      <td>${m.department_name||'—'}</td>
+      <td><span class="badge badge-${m.membership_status==='Active'?'success':m.membership_status==='Inactive'?'warning':'secondary'}">${m.membership_status}</span></td>
+      <td>${fmt.date(m.date_joined)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-outline" onclick="editMember(${m.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMember(${m.id},'${m.full_name}')">Del</button>
+      </td>
+    </tr>`).join('');
+
+  // Pagination
+  const pagEl = document.getElementById('pagination');
+  if (pagination.pages > 1) {
+    let html = '';
+    for (let i=1; i<=pagination.pages; i++) {
+      html += `<button class="${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    pagEl.innerHTML = html;
+  } else pagEl.innerHTML = '';
+}
+
+function goPage(p) { page = p; loadMembers(); }
+
+function openAddModal() {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Register New Member';
+  document.getElementById('member-form').reset();
+  document.getElementById('member-id').value = '';
+  document.getElementById('status-row').style.display = 'none';
+  openModal('member-modal');
+}
+
+async function editMember(id) {
+  const res = await api.get(`/members/${id}`);
+  if (!res?.ok) return toast('Failed to load member', 'error');
+  const m = res.data.data;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Edit Member';
+  document.getElementById('member-id').value  = id;
+  document.getElementById('f-fullname').value = m.full_name;
+  document.getElementById('f-gender').value   = m.gender;
+  document.getElementById('f-phone').value    = m.phone||'';
+  document.getElementById('f-email').value    = m.email||'';
+  document.getElementById('f-dob').value      = m.date_of_birth||'';
+  document.getElementById('f-joined').value   = m.date_joined||'';
+  document.getElementById('f-marital').value  = m.marital_status||'Single';
+  document.getElementById('f-occupation').value = m.occupation||'';
+  document.getElementById('f-address').value  = m.address||'';
+  document.getElementById('f-nok').value      = m.next_of_kin||'';
+  document.getElementById('f-nokphone').value = m.next_of_kin_phone||'';
+  document.getElementById('f-baptized').checked = !!m.baptized;
+  document.getElementById('f-worker').checked    = !!m.worker;
+  document.getElementById('f-branch').value   = m.branch_id;
+  document.getElementById('f-dept').value     = m.department_id||'';
+  document.getElementById('f-status').value   = m.membership_status;
+  document.getElementById('status-row').style.display = 'block';
+  openModal('member-modal');
+}
+
+async function saveMember() {
+  const btn = document.getElementById('save-member-btn');
+  setLoading(btn, true);
+
+  const payload = {
+    full_name:        document.getElementById('f-fullname').value,
+    gender:           document.getElementById('f-gender').value,
+    phone:            document.getElementById('f-phone').value,
+    email:            document.getElementById('f-email').value,
+    date_of_birth:    document.getElementById('f-dob').value,
+    date_joined:      document.getElementById('f-joined').value,
+    marital_status:   document.getElementById('f-marital').value,
+    occupation:       document.getElementById('f-occupation').value,
+    address:          document.getElementById('f-address').value,
+    next_of_kin:      document.getElementById('f-nok').value,
+    next_of_kin_phone:document.getElementById('f-nokphone').value,
+    baptized:         document.getElementById('f-baptized').checked,
+    worker:           document.getElementById('f-worker').checked,
+    branch_id:        document.getElementById('f-branch').value,
+    department_id:    document.getElementById('f-dept').value || null,
+    membership_status:document.getElementById('f-status').value || 'Active',
+  };
+
+  let res;
+  if (editId) res = await api.put(`/members/${editId}`, payload);
+  else        res = await api.post('/members', payload);
+
+  setLoading(btn, false);
+  if (res?.ok) {
+    toast(editId ? 'Member updated!' : 'Member registered!', 'success');
+    closeModal('member-modal');
+    loadMembers();
+    loadStats();
+  } else {
+    toast(res?.data?.message || 'Failed to save member', 'error');
+  }
+}
+
+function deleteMember(id, name) {
+  confirmDialog(`Delete member <strong>${name}</strong>? This cannot be undone.`, async () => {
+    const res = await api.delete(`/members/${id}`);
+    if (res?.ok) { toast('Member deleted', 'success'); loadMembers(); loadStats(); }
+    else toast(res?.data?.message || 'Failed to delete', 'error');
+  });
+}
+
+function exportCSV() {
+  const rows = [['Member ID','Name','Gender','Phone','Email','Branch','Department','Status','Date Joined']];
+  document.querySelectorAll('#members-tbody tr').forEach(tr => {
+    const cells = [...tr.querySelectorAll('td')];
+    if (cells.length >= 8) {
+      rows.push(cells.slice(0,8).map(td => `"${td.textContent.trim()}"`));
+    }
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = 'members_export.csv';
+  a.click();
+}
+
+// Override openModal for add button
+document.querySelector('[onclick="openModal(\'member-modal\')"]').onclick = openAddModal;
+</script>
+</body>
+</html>

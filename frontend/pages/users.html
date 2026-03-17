@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html" class="active"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">User Management</span>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="page-header">
+        <h2>System Users</h2>
+        <button class="btn btn-primary" onclick="openModal('user-modal')">+ Add User</button>
+      </div>
+
+      <!-- Role legend -->
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.2rem">
+        <span class="badge badge-danger">super_admin — Regional Overseer</span>
+        <span class="badge badge-warning">branch_admin — Branch Leader</span>
+        <span class="badge badge-info">accountant — Finance Officer</span>
+        <span class="badge badge-secondary">membership_officer — Registration</span>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Branch</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--gray)">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="u-modal-title">Create User</h3>
+      <button class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="user-alert"></div>
+      <form id="user-form">
+        <input type="hidden" id="u-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" class="form-control" id="u-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Username *</label>
+            <input type="text" class="form-control" id="u-username" required autocomplete="off">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" class="form-control" id="u-email" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Password <span id="pw-hint">(required)</span></label>
+            <input type="password" class="form-control" id="u-password" autocomplete="new-password" placeholder="Min 6 characters">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role *</label>
+            <select class="form-control" id="u-role" required>
+              <option value="membership_officer">Membership Officer</option>
+              <option value="accountant">Accountant</option>
+              <option value="branch_admin">Branch Admin</option>
+              <option value="super_admin" id="super-admin-opt">Super Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" id="u-branch-group">
+          <label class="form-label">Branch *</label>
+          <select class="form-control" id="u-branch"></select>
+        </div>
+        <div class="form-group" id="u-status-group" style="display:none">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="u-status">
+            <option value="1">Active</option>
+            <option value="0">Inactive</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary modal-close">Cancel</button>
+      <button class="btn btn-primary" id="save-user-btn" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let editUserId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  if (!Auth.isRole('super_admin','branch_admin')) {
+    document.querySelector('.page-content').innerHTML = '<div class="alert alert-error">Access denied. Admins only.</div>';
+    return;
+  }
+  await loadBranches();
+  await loadUsers();
+
+  if (!Auth.isSuperAdmin()) {
+    document.getElementById('super-admin-opt').style.display = 'none';
+    document.getElementById('u-branch-group').style.display  = 'none';
+  }
+});
+
+async function loadBranches() {
+  const res = await api.get('/branches');
+  if (!res?.ok) return;
+  const user = Auth.getUser();
+  res.data.data.forEach(b => {
+    document.getElementById('u-branch').innerHTML += `<option value="${b.id}" ${b.id===user.branch_id?'selected':''}>${b.name}</option>`;
+  });
+}
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  const res = await api.get('/users');
+  if (!res?.ok) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--red)">Failed to load users</td></tr>'; return; }
+
+  const users = res.data.data;
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray)">No users found</td></tr>'; return; }
+
+  const roleColors = { super_admin:'badge-danger', branch_admin:'badge-warning', accountant:'badge-info', membership_officer:'badge-secondary' };
+
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td><strong>${u.full_name}</strong></td>
+      <td><code>${u.username}</code></td>
+      <td style="font-size:.85rem">${u.email}</td>
+      <td><span class="badge ${roleColors[u.role]||'badge-secondary'}">${u.role.replace(/_/g,' ')}</span></td>
+      <td style="font-size:.85rem">${u.branch_name}</td>
+      <td><span class="badge ${u.is_active?'badge-success':'badge-danger'}">${u.is_active?'Active':'Inactive'}</span></td>
+      <td style="font-size:.82rem">${fmt.datetime(u.last_login)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-outline" onclick="editUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">Edit</button>
+        ${Auth.isSuperAdmin() ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id},'${u.full_name}')">Del</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+function openAddUser() {
+  editUserId = null;
+  document.getElementById('u-modal-title').textContent = 'Create User';
+  document.getElementById('user-form').reset();
+  document.getElementById('u-id').value = '';
+  document.getElementById('pw-hint').textContent = '(required)';
+  document.getElementById('u-password').required = true;
+  document.getElementById('u-status-group').style.display = 'none';
+  document.getElementById('user-alert').innerHTML = '';
+  openModal('user-modal');
+}
+
+function editUser(u) {
+  editUserId = u.id;
+  document.getElementById('u-modal-title').textContent = 'Edit User';
+  document.getElementById('u-id').value       = u.id;
+  document.getElementById('u-name').value     = u.full_name;
+  document.getElementById('u-username').value = u.username;
+  document.getElementById('u-email').value    = u.email;
+  document.getElementById('u-role').value     = u.role;
+  document.getElementById('u-branch').value   = u.branch_id || '';
+  document.getElementById('u-status').value   = u.is_active ? '1' : '0';
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-password').required = false;
+  document.getElementById('pw-hint').textContent = '(leave blank to keep current)';
+  document.getElementById('u-status-group').style.display = 'block';
+  document.getElementById('user-alert').innerHTML = '';
+  openModal('user-modal');
+}
+
+async function saveUser() {
+  const btn = document.getElementById('save-user-btn');
+  setLoading(btn, true);
+  const payload = {
+    full_name:  document.getElementById('u-name').value,
+    username:   document.getElementById('u-username').value,
+    email:      document.getElementById('u-email').value,
+    role:       document.getElementById('u-role').value,
+    branch_id:  document.getElementById('u-branch').value,
+    is_active:  document.getElementById('u-status').value === '1',
+  };
+  const pw = document.getElementById('u-password').value;
+  if (pw) payload.password = pw;
+
+  let res;
+  if (editUserId) res = await api.put(`/users/${editUserId}`, payload);
+  else            res = await api.post('/users', { ...payload, password: pw });
+
+  setLoading(btn, false);
+  if (res?.ok) {
+    toast(editUserId ? 'User updated!' : 'User created!', 'success');
+    closeModal('user-modal');
+    loadUsers();
+  } else {
+    document.getElementById('user-alert').innerHTML = `<div class="alert alert-error">${res?.data?.message||'Failed to save user'}</div>`;
+  }
+}
+
+async function deleteUser(id, name) {
+  confirmDialog(`Permanently delete user <strong>${name}</strong>?`, async () => {
+    const res = await api.delete(`/users/${id}`);
+    if (res?.ok) { toast('User deleted', 'success'); loadUsers(); }
+    else toast(res?.data?.message || 'Failed to delete', 'error');
+  });
+}
+
+// Fix add button
+document.querySelector('[onclick="openModal(\'user-modal\')"]').onclick = openAddUser;
+</script>
+</body>
+</html>

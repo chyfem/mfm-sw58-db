@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance — MFM SW58 CMS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="admin-layout">
+  <div id="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;pointer-events:none;transition:.25s;" onclick="document.querySelector('.sidebar').classList.remove('open');this.style.opacity=0;this.style.pointerEvents='none';"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="church-name">MFM SW58 Araromi</div><div class="church-sub">Church Management System</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/pages/dashboard.html"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/pages/members.html"><span class="nav-icon">👥</span> Members</a>
+      <a href="/pages/attendance.html" class="active"><span class="nav-icon">✅</span> Attendance</a>
+      <div class="nav-section-label">Finance</div>
+      <a href="/pages/transactions.html"><span class="nav-icon">💰</span> Transactions</a>
+      <a href="/pages/reports.html"><span class="nav-icon">📈</span> Reports</a>
+      <div class="nav-section-label">Administration</div>
+      <a href="/pages/branches.html"><span class="nav-icon">🏛</span> Branches</a>
+      <a href="/pages/users.html"><span class="nav-icon">👤</span> Users</a>
+      <div class="nav-section-label">Account</div>
+      <a href="/pages/settings.html"><span class="nav-icon">⚙️</span> Settings</a>
+      <a href="#" data-logout><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-avatar">?</div><div class="sidebar-user-info"><div class="name" id="sidebar-name">Loading…</div><div class="role" id="sidebar-role"></div></div></div>
+      <small style="color:rgba(255,255,255,.3);font-size:.72rem" id="sidebar-branch"></small>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <button class="hamburger-admin" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('#sidebar-overlay').style.opacity=1;document.querySelector('#sidebar-overlay').style.pointerEvents='all'">☰</button>
+        <span class="top-bar-title">Attendance Tracking</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+        <!-- Mark Attendance Panel -->
+        <div class="card">
+          <div class="card-header">✅ Mark Attendance</div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Service Date</label>
+              <input type="date" class="form-control" id="att-date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Service Type</label>
+              <select class="form-control" id="att-type">
+                <option value="Sunday Service">Sunday Service</option>
+                <option value="Midweek">Midweek Bible Study</option>
+                <option value="Prayer Meeting">Prayer Meeting (PMC)</option>
+                <option value="Special Program">Special Program</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Search & Select Members</label>
+              <input type="text" class="form-control" id="att-search" placeholder="Type name to search…" oninput="searchMembers()">
+            </div>
+            <div id="member-search-results" style="border:1.5px solid var(--gray-light);border-radius:var(--radius);max-height:220px;overflow-y:auto;margin-bottom:1rem;display:none"></div>
+            <div>
+              <label class="form-label">Selected Members (<span id="selected-count">0</span>)</label>
+              <div id="selected-members" style="display:flex;flex-wrap:wrap;gap:.4rem;min-height:40px;border:1.5px dashed var(--gray-light);border-radius:var(--radius);padding:.5rem"></div>
+            </div>
+            <button class="btn btn-primary mt-1" style="width:100%;justify-content:center" onclick="submitAttendance()" id="submit-att-btn">Mark Attendance</button>
+          </div>
+        </div>
+
+        <!-- View Attendance Panel -->
+        <div class="card">
+          <div class="card-header">📋 View Attendance Records</div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" id="view-date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Service Type</label>
+                <select class="form-control" id="view-type">
+                  <option value="">All Types</option>
+                  <option>Sunday Service</option>
+                  <option>Midweek</option>
+                  <option>Prayer Meeting</option>
+                  <option>Special Program</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="viewAttendance()">🔍 View Records</button>
+            <div id="att-count" style="margin-top:1rem;font-size:.9rem;color:var(--gray)"></div>
+            <div class="table-wrapper mt-1">
+              <table class="table" style="font-size:.85rem">
+                <thead><tr><th>Member ID</th><th>Name</th><th>Service</th><th>Date</th></tr></thead>
+                <tbody id="att-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--gray)">Set filters and click View Records</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let selectedMembers = new Map(); // id → {id, full_name, member_id}
+let searchDebounce;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  document.getElementById('att-date').valueAsDate  = new Date();
+  document.getElementById('view-date').valueAsDate = new Date();
+});
+
+async function searchMembers() {
+  clearTimeout(searchDebounce);
+  const q = document.getElementById('att-search').value.trim();
+  const resultsEl = document.getElementById('member-search-results');
+  if (q.length < 2) { resultsEl.style.display='none'; return; }
+
+  searchDebounce = setTimeout(async () => {
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = '<div style="padding:.75rem;color:var(--gray)">Searching…</div>';
+    const res = await api.get(`/members?search=${encodeURIComponent(q)}&limit=15`);
+    if (!res?.ok || !res.data.data.length) {
+      resultsEl.innerHTML = '<div style="padding:.75rem;color:var(--gray)">No members found</div>';
+      return;
+    }
+    resultsEl.innerHTML = res.data.data.map(m => `
+      <div onclick="selectMember(${m.id},'${m.full_name}','${m.member_id}')"
+           style="padding:.65rem 1rem;cursor:pointer;border-bottom:1px solid var(--gray-light);font-size:.88rem;transition:.15s"
+           onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">
+        <strong>${m.full_name}</strong> <span style="color:var(--gray)">${m.member_id} · ${m.branch_name||''}</span>
+      </div>`).join('');
+  }, 250);
+}
+
+function selectMember(id, name, memberId) {
+  if (!selectedMembers.has(id)) {
+    selectedMembers.set(id, { id, full_name: name, member_id: memberId });
+    renderSelected();
+  }
+  document.getElementById('att-search').value = '';
+  document.getElementById('member-search-results').style.display = 'none';
+}
+
+function removeMember(id) {
+  selectedMembers.delete(id);
+  renderSelected();
+}
+
+function renderSelected() {
+  const container = document.getElementById('selected-members');
+  document.getElementById('selected-count').textContent = selectedMembers.size;
+  container.innerHTML = [...selectedMembers.values()].map(m => `
+    <span style="background:var(--red);color:var(--white);padding:.3rem .7rem;border-radius:50px;font-size:.8rem;display:flex;align-items:center;gap:.4rem">
+      ${m.full_name} <button onclick="removeMember(${m.id})" style="background:none;border:none;color:var(--white);cursor:pointer;font-size:.9rem;padding:0;line-height:1">×</button>
+    </span>`).join('');
+}
+
+async function submitAttendance() {
+  if (!selectedMembers.size) { toast('Please select at least one member', 'warning'); return; }
+  const btn = document.getElementById('submit-att-btn');
+  setLoading(btn, true);
+  const res = await api.post('/attendance', {
+    member_ids:   [...selectedMembers.keys()],
+    date:         document.getElementById('att-date').value,
+    service_type: document.getElementById('att-type').value,
+  });
+  setLoading(btn, false);
+  if (res?.ok) {
+    toast(res.data.message, 'success');
+    selectedMembers.clear();
+    renderSelected();
+  } else {
+    toast(res?.data?.message || 'Failed to record attendance', 'error');
+  }
+}
+
+async function viewAttendance() {
+  const date = document.getElementById('view-date').value;
+  const type = document.getElementById('view-type').value;
+  let url = '/attendance?';
+  if (date) url += `date=${date}&`;
+  if (type) url += `service_type=${encodeURIComponent(type)}`;
+
+  const tbody = document.getElementById('att-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray)">Loading…</td></tr>';
+
+  const res = await api.get(url);
+  if (!res?.ok) { tbody.innerHTML = '<tr><td colspan="4" style="color:var(--red);text-align:center">Failed to load</td></tr>'; return; }
+
+  const records = res.data.data;
+  document.getElementById('att-count').textContent = records.length ? `${records.length} record(s) found` : '';
+
+  if (!records.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray)">No records found</td></tr>'; return; }
+
+  tbody.innerHTML = records.map(r => `
+    <tr>
+      <td>${r.member_id}</td>
+      <td>${r.full_name}</td>
+      <td style="font-size:.8rem">${r.service_type}</td>
+      <td>${fmt.date(r.date)}</td>
+    </tr>`).join('');
+}
+</script>
+</body>
+</html>
