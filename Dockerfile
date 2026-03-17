@@ -5,4 +5,3 @@ RUN npm install --only=production
 COPY . .
 EXPOSE 8000
 CMD ["node", "backend/server.js"]
-```
