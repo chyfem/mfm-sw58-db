@@ -6,7 +6,7 @@
   "engines": { "node": "18" },
   "scripts": {
     "start": "node backend/server.js",
-    "build": "npm install",
+    "build": "npm install --production",
     "setup": "node setup.js"
   },
   "dependencies": {
